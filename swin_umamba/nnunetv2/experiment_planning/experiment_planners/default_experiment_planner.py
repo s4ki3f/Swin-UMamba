@@ -327,14 +327,18 @@ class ExperimentPlanner(object):
 
         # alright now let's determine the batch size. This will give self.UNet_min_batch_size if the while loop was
         # executed. If not, additional vram headroom is used to increase batch size
-        ref_bs = self.UNet_reference_val_corresp_bs_2d if len(spacing) == 2 else self.UNet_reference_val_corresp_bs_3d
+        ref_bs = self.UNet_reference_val_corresp_bs_2d if len(spacing) == 2 else self.UNet_reference_val_corresp_bs_3d/2
         batch_size = round((reference / estimate) * ref_bs)
+        
+        # Set your desired maximum batch size
+        max_batch_size = 5  # replace with your value
 
         # we need to cap the batch size to cover at most 5% of the entire dataset. Overfitting precaution. We cannot
         # go smaller than self.UNet_min_batch_size though
         bs_corresponding_to_5_percent = round(
             approximate_n_voxels_dataset * 0.05 / np.prod(patch_size, dtype=np.float64))
-        batch_size = max(min(batch_size, bs_corresponding_to_5_percent), self.UNet_min_batch_size)
+        # Ensure batch_size doesn't exceed max_batch_size
+        batch_size = max(min(batch_size, bs_corresponding_to_5_percent, max_batch_size), self.UNet_min_batch_size)
 
         resampling_data, resampling_data_kwargs, resampling_seg, resampling_seg_kwargs = self.determine_resampling()
         resampling_softmax, resampling_softmax_kwargs = self.determine_segmentation_softmax_export_fn()
